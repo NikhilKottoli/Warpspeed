@@ -1,8 +1,13 @@
 const express = require('express');
-const router = express.Router();
-const { generateAudio } = require('../controllers/voiceController');
+const multer = require('multer');
+const speechController = require('../controllers/voiceController');
 
-// POST /audio/generate-audio - Generate audio from text
-router.post('/generate-audio', generateAudio);
+const router = express.Router();
+
+// Text to AI to Speech pipeline
+router.post('/process-speech', speechController.chatResponse);
+
+// Standalone text-to-speech
+router.post('/text-to-speech', speechController.generateAudio);
 
 module.exports = router;

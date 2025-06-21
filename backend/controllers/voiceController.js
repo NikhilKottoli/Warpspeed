@@ -1,30 +1,61 @@
 const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
 require('dotenv').config();
 
-exports.generateAudio = async (req, res) => {
-  try {
-    // const requestBody = {
-    //   text: "When should we have lunch",
-    //   target_language_code: "kn-IN"
-    // };
-
-    const apiResponse = await axios.post('https://api.sarvam.ai/text-to-speech', req, {
-      headers: {
-        'api-subscription-key': process.env.API_SUBSCRIPTION_KEY,
-        'Content-Type': 'application/json'
+const speechController = {
+  chatResponse: async (req, res) => {
+    try {
+      const text = req.body.text?.trim();
+      if (!text) {
+        return res.status(400).json({ success: false, error: 'Text is required' });
       }
-    });
-    const audioBase64Array = apiResponse.data.audios;
-    const audioBase64 = audioBase64Array.join('');
 
-    return res.status(200).json({
-      success: true,
-      audio: audioBase64
-    });
-  } catch (error) {
-    console.error(error.response?.data || error.message);
-    return res.status(500).json({ error: 'Failed to generate or save audio.' });
+      const aiResponse = await axios.post('https://api.sarvam.ai/v1/chat/completions', {
+        messages: [{ role: "user", content: text }],
+        model: "sarvam-m"
+      }, {
+        headers: {
+          'api-subscription-key': process.env.API_SUBSCRIPTION_KEY,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const aiText = aiResponse.data?.choices?.[0]?.message?.content?.trim();
+
+      return res.status(200).json({
+        success: true,
+        originalText: text,
+        aiResponse: aiText
+      });
+    } catch (error) {
+      return res.status(500).json({ success: false, error: 'Processing failed', details: error.message });
+    }
+  },
+
+  generateAudio: async (req, res) => {
+    try {
+      const { text, speaker = "anushka", language_code = "en-IN" } = req.body;
+      if (!text) {
+        return res.status(400).json({ success: false, error: 'Text required' });
+      }
+
+      const response = await axios.post('https://api.sarvam.ai/text-to-speech', {
+        text: text.trim(),
+        speaker,
+        language_code
+      }, {
+        headers: {
+          'api-subscription-key': process.env.API_SUBSCRIPTION_KEY,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const audioBase64 = response.data?.audios?.join('') || '';
+
+      return res.status(200).json({ success: true, text, audio: audioBase64 });
+    } catch (error) {
+      return res.status(500).json({ success: false, error: 'Audio generation failed', details: error.message });
+    }
   }
 };
+
+module.exports = speechController;

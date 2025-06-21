@@ -117,13 +117,12 @@ class _VoiceAgentPageState extends State<VoiceAgentPage> {
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('किसान सहायक'),
+        title: const Text('Krishi Sathi AI'),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
@@ -142,19 +141,19 @@ class _VoiceAgentPageState extends State<VoiceAgentPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Profile Section
+                // Greeting Section
                 Row(
                   children: [
                     const CircleAvatar(
                       radius: 28,
-                      backgroundImage: AssetImage('assets/profile.jpg'), // Replace with your asset
+                      backgroundImage: AssetImage('assets/profile.jpg'),
                     ),
                     const SizedBox(width: 12),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: const [
                         Text(
-                          'नमस्ते, किसान भाई!',
+                          'Hello, Farmer!',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 20,
@@ -162,7 +161,7 @@ class _VoiceAgentPageState extends State<VoiceAgentPage> {
                           ),
                         ),
                         Text(
-                          'स्वागत है आपके सहायक में',
+                          'Welcome to your smart assistant',
                           style: TextStyle(
                             color: Colors.white70,
                             fontSize: 14,
@@ -174,8 +173,9 @@ class _VoiceAgentPageState extends State<VoiceAgentPage> {
                 ),
                 const SizedBox(height: 30),
 
+                // Section Title
                 const Text(
-                  '🌾 कृषि समाचार',
+                  '🌾 Agriculture News',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 22,
@@ -196,7 +196,8 @@ class _VoiceAgentPageState extends State<VoiceAgentPage> {
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.white.withOpacity(0.2)),
+                          border: Border.all(
+                              color: Colors.white.withOpacity(0.2)),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.1),
@@ -209,7 +210,7 @@ class _VoiceAgentPageState extends State<VoiceAgentPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              news['title']!,
+                              news['title'] ?? '',
                               style: const TextStyle(
                                 fontSize: 16,
                                 color: Colors.white,
@@ -218,7 +219,7 @@ class _VoiceAgentPageState extends State<VoiceAgentPage> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              news['summary']!,
+                              news['summary'] ?? '',
                               style: const TextStyle(
                                 fontSize: 14,
                                 color: Colors.white70,
@@ -230,36 +231,8 @@ class _VoiceAgentPageState extends State<VoiceAgentPage> {
                     },
                   ),
                 ),
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const VoiceAgentScreen()),
-                    );
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.white.withOpacity(0.4),
-                          blurRadius: 10,
-                          spreadRadius: 3,
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.mic,
-                      size: 40,
-                      color: Colors.blueAccent,
-                    ),
-                  ),
-                ),
 
+                // Voice Agent Button
 
               ],
             ),
@@ -269,4 +242,4 @@ class _VoiceAgentPageState extends State<VoiceAgentPage> {
     );
   }
 
-}
+  }

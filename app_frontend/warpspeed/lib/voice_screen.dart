@@ -1,12 +1,14 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:record/record.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:http_parser/http_parser.dart';
+
 class VoiceAgentScreen extends StatefulWidget {
   const VoiceAgentScreen({super.key});
 
@@ -15,43 +17,73 @@ class VoiceAgentScreen extends StatefulWidget {
 }
 
 class _VoiceAgentScreenState extends State<VoiceAgentScreen> {
-  final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
-
+  final AudioRecorder _recorder = AudioRecorder();
+  final FlutterSoundPlayer _player = FlutterSoundPlayer();
   bool isRecording = false;
   String statusMessage = '';
   String serverResponse = '';
+  String? recordedFilePath;
+
   @override
   void initState() {
     super.initState();
-    _initializeRecorder();
+    _requestPermissions();
   }
 
-  Future<void> _initializeRecorder() async {
-    await Permission.microphone.request();
-    await _recorder.openRecorder();
+  Future<void> _requestPermissions() async {
+    final micStatus = await Permission.microphone.request();
+    if (micStatus != PermissionStatus.granted) {
+      setState(() => statusMessage = 'Microphone permission not granted');
+    }
   }
-  @override
-  void dispose() {
-    _recorder.closeRecorder();
-    super.dispose();
+  Future<void> playBase64Audio(String base64String) async {
+    try {
+      // 1. Decode base64 to bytes
+      final audioBytes = base64Decode(base64String);
+
+      // 2. Get temp directory and create .wav file
+      final tempDir = await getTemporaryDirectory();
+      final filePath = '${tempDir.path}/tts_output.wav';
+      final audioFile = File(filePath);
+      await audioFile.writeAsBytes(audioBytes);
+
+      // 3. Initialize and start player
+      await _player.openPlayer();
+      await _player.startPlayer(fromURI: filePath, codec: Codec.pcm16WAV);
+
+      print("✅ Playing audio...");
+    } catch (e) {
+      print("❌ Failed to play audio: $e");
+    }
   }
 
   Future<String> _getTempWavPath() async {
-    final directory = await getTemporaryDirectory();
-    print(directory);
+    final directory = Directory('/storage/emulated/0/Download');
+    if (!(await directory.exists())) {
+      await directory.create(recursive: true);
+    }
     return '${directory.path}/recorded_audio.wav';
   }
+
   Future<void> _startRecording() async {
-    final filePath = await _getTempWavPath();
+    final hasPermission = await _recorder.hasPermission();
+    if (!hasPermission) {
+      setState(() => statusMessage = 'Microphone permission not granted');
+      return;
+    }
 
-    await _recorder.startRecorder(
-      toFile: filePath,
-      codec: Codec.pcm16WAV,
-      sampleRate: 16000, // Required for most STT engines
-      numChannels: 1,     // Mono audio
-      bitRate: 256000,    // Optional, safe high bitrate
+    final path = await _getTempWavPath();
+    recordedFilePath = path;
+
+    await _recorder.start(
+      RecordConfig(
+        encoder: AudioEncoder.wav,
+        sampleRate: 16000,
+        bitRate: 256000,
+        numChannels: 1,
+      ),
+      path: path,
     );
-
 
     setState(() {
       isRecording = true;
@@ -59,36 +91,9 @@ class _VoiceAgentScreenState extends State<VoiceAgentScreen> {
       serverResponse = '';
     });
   }
-  Future<void> _uploadAudio(File audioFile) async {
-    try {
-      final uri = Uri.parse('https://api.sarvam.ai/speech-to-text');
-      final request = http.MultipartRequest('POST', uri)
-        ..headers['api-subscription-key'] = ''
-        ..files.add(await http.MultipartFile.fromPath(
-          'file',
-          audioFile.path,
-          contentType: MediaType('audio', 'wav'),
-        ));
 
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-      print(response.body);
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        setState(() {
-          serverResponse = data['text'] ?? 'No response text';
-          statusMessage = 'Success';
-        });
-      } else {
-        setState(() => statusMessage = 'Server error: ${response.statusCode}');
-      }
-    } catch (e) {
-      setState(() => statusMessage = 'Upload error: $e');
-    }
-  }
   Future<void> _stopRecording() async {
-    final path = await _recorder.stopRecorder();
+    final path = await _recorder.stop();
 
     setState(() {
       isRecording = false;
@@ -96,12 +101,87 @@ class _VoiceAgentScreenState extends State<VoiceAgentScreen> {
     });
 
     if (path != null) {
-      print(path);
-      await _uploadAudio(File(path));
+      recordedFilePath = path;
+      final file = File(path);
+      if (await file.exists()) {
+        await _uploadAudio(file);
+      } else {
+        setState(() => statusMessage = 'Recording file not found');
+      }
     } else {
-      setState(() => statusMessage = 'Recording failed');
+      setState(() => statusMessage = 'Recording failed or canceled');
     }
+  }
 
+  Future<void> _uploadAudio(File audioFile) async {
+    try {
+      var uri = Uri.parse('https://api.sarvam.ai/speech-to-text-translate');
+      final request = http.MultipartRequest('POST', uri)
+        ..headers['api-subscription-key'] = 'sk_vyja2u8y_8V8D4I7wA0f0iok2awYT9pqV'
+        ..files.add(await http.MultipartFile.fromPath(
+          'file',
+          audioFile.path,
+          contentType: MediaType('audio', 'wav'),
+        ));
+
+
+      final response = await http.Response.fromStream(await request.send());
+      print(response.body);
+      if (response!=null) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          serverResponse = data['transcript'] ?? 'No response text';
+          statusMessage = 'Success';
+        });
+        final text = data['transcript'];
+        uri = Uri.parse('http://10.156.104.229:3000/audio/process-speech');
+        final response1 = await http.post(
+          uri,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'text': text,
+          }),
+        );
+        final data1 = jsonDecode(response1.body);
+        print(response1.body);
+        setState(() {
+          serverResponse = data1['aiResponse'] ?? 'No response text';
+          statusMessage = 'Success';
+        });
+        uri = Uri.parse('https://api.sarvam.ai/text-to-speech');
+        final response2 = await http.post(
+          uri,
+          headers: {
+            'api-subscription-key': 'sk_vyja2u8y_8V8D4I7wA0f0iok2awYT9pqV', // Replace with actual key
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'text': data1['aiResponse'],
+            'target_language_code': 'en-IN',
+          }),
+        );
+        print(response2.body);
+        final data2 = jsonDecode(response2.body);
+        final base64Audio = data2['audios'][0]; // Your string
+        await playBase64Audio(base64Audio);
+
+
+
+
+      } else {
+        setState(() => statusMessage = 'Server error: ${response.statusCode}');
+      }
+    } catch (e) {
+      setState(() => statusMessage = 'Upload error: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _recorder.dispose();
+    super.dispose();
   }
 
   @override
@@ -135,8 +215,6 @@ class _VoiceAgentScreenState extends State<VoiceAgentScreen> {
                     size: 40.0,
                   ),
                 const SizedBox(height: 30),
-
-                // Glassmorphism card
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -174,10 +252,8 @@ class _VoiceAgentScreenState extends State<VoiceAgentScreen> {
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 40),
 
-                // Glowing mic button
                 GestureDetector(
                   onTap: isRecording ? _stopRecording : _startRecording,
                   child: AnimatedContainer(
@@ -210,10 +286,7 @@ class _VoiceAgentScreenState extends State<VoiceAgentScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 30),
-
-                // Status message
                 if (statusMessage.isNotEmpty)
                   Text(
                     statusMessage,
@@ -230,5 +303,4 @@ class _VoiceAgentScreenState extends State<VoiceAgentScreen> {
       ),
     );
   }
-
 }

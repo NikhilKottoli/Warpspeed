@@ -1,0 +1,60 @@
+{
+  "features": [
+    {
+      "id": "weather-forecast",
+      "icon": "Cloud",
+      "title": "Weather Forecast",
+      "description": "Get accurate 7-day weather predictions, rainfall alerts, and climate insights to plan your farming activities better.",
+      "enabled": true
+    },
+    {
+      "id": "msp-prices",
+      "icon": "DollarSign",
+      "title": "MSP Prices",
+      "description": "Stay updated with the latest Minimum Support Prices for all crops and make informed selling decisions.",
+      "enabled": true
+    },
+    {
+      "id": "government-schemes",
+      "icon": "Building2",
+      "title": "Government Schemes",
+      "description": "Access comprehensive information about agricultural subsidies, loans, and government welfare programs.",
+      "enabled": true
+    },
+    {
+      "id": "market-analytics",
+      "icon": "TrendingUp",
+      "title": "Market Analytics",
+      "description": "Analyze market trends, crop demand, and price fluctuations to maximize your agricultural profits.",
+      "enabled": true
+    },
+    {
+      "id": "crop-advisory",
+      "icon": "Leaf",
+      "title": "Crop Advisory",
+      "description": "Get personalized crop recommendations based on soil conditions, weather patterns, and market demand.",
+      "enabled": true
+    },
+    {
+      "id": "mobile-friendly",
+      "icon": "Smartphone",
+      "title": "Mobile Friendly",
+      "description": "Access all features on your smartphone with our responsive design and offline capabilities.",
+      "enabled": true
+    },
+    {
+      "id": "iot-sensors",
+      "icon": "Wifi",
+      "title": "IoT Integration",
+      "description": "Connect with smart sensors to monitor soil moisture, temperature, and other vital agricultural parameters.",
+      "enabled": true
+    },
+    {
+      "id": "community",
+      "icon": "Users",
+      "title": "Farmer Community",
+      "description": "Connect with fellow farmers, share experiences, and learn from agricultural experts in your region.",
+      "enabled": false
+    }
+  ]
+}

@@ -1,10 +1,13 @@
 import React from 'react';
+import LandingPage from './components/LandingPage';
 
 function App() {
   return (
-    <div className='bg-black flex items-center justify-center h-screen'>
-      <h1 className='text-white'>Congrats! React is set up.</h1>
+    
+     <div>
+      <LandingPage />
     </div>
+    
   );
 }
 

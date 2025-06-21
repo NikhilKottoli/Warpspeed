@@ -1,197 +1,234 @@
-import 'package:flutter/material.dart';
-import 'package:speech_to_text/speech_to_text.dart';
-import 'package:http/http.dart' as http;
+import 'dart:io';
 import 'dart:convert';
-import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_sound/flutter_sound.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:http_parser/http_parser.dart';
 
 class VoiceAgentPage extends StatefulWidget {
   const VoiceAgentPage({super.key});
 
   @override
-  _VoiceAgentPageState createState() => _VoiceAgentPageState();
+  State<VoiceAgentPage> createState() => _VoiceAgentPageState();
 }
 
-class _VoiceAgentPageState extends State<VoiceAgentPage> with SingleTickerProviderStateMixin {
-  bool isListening = false;
-  String recognizedText = '';
-  String responseStatus = '';
-  final SpeechToText _speech = SpeechToText();
-  final AudioPlayer _player = AudioPlayer();
-  late AnimationController _animationController;
+class _VoiceAgentPageState extends State<VoiceAgentPage> {
+  final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
+
+  bool isRecording = false;
+  String statusMessage = '';
+  String serverResponse = '';
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(vsync: this, duration: const Duration(seconds: 1))
-      ..repeat(reverse: true);
+    _initializeRecorder();
   }
 
-  Future<void> startListening() async {
-    bool available = await _speech.initialize();
-    if (available) {
-      _speech.listen(
-        onResult: (result) {
-          setState(() {
-            recognizedText = result.recognizedWords;
-          });
-        },
-      );
+  Future<void> _initializeRecorder() async {
+    await Permission.microphone.request();
+    await Permission.storage.request();
+    await _recorder.openRecorder();
+  }
+
+  Future<String> _getTempWavPath() async {
+    final directory = await getTemporaryDirectory();
+    return '${directory.path}/recorded_audio.wav';
+  }
+
+  Future<void> _startRecording() async {
+    final filePath = await _getTempWavPath();
+
+    await _recorder.startRecorder(
+      toFile: filePath,
+      codec: Codec.pcm16WAV,
+    );
+
+    setState(() {
+      isRecording = true;
+      statusMessage = 'Recording...';
+      serverResponse = '';
+    });
+  }
+
+  Future<void> _stopRecording() async {
+    final path = await _recorder.stopRecorder();
+
+    setState(() {
+      isRecording = false;
+      statusMessage = 'Uploading...';
+    });
+
+    if (path != null) {
+      await _uploadAudio(File(path));
     } else {
-      setState(() => responseStatus = 'Speech recognition not available');
+      setState(() => statusMessage = 'Recording failed');
     }
   }
 
-  Future<void> stopListening() async {
-    await _speech.stop();
-    if (recognizedText.isNotEmpty) {
-      sendToBackend(recognizedText);
-    } else {
-      setState(() => responseStatus = 'No input detected');
-    }
-  }
-
-  Future<void> sendToBackend(String text) async {
-    setState(() => responseStatus = 'Processing...');
-
+  Future<void> _uploadAudio(File audioFile) async {
     try {
-      final response = await http.post(
-        Uri.parse("http://localhost:3000/audio/generate-audio"),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'text': text,
-                        'target_language_code' : 'kn-IN'}),
-      );
+      final uri = Uri.parse('http://localhost:3000/audio/process');
+
+      final request = http.MultipartRequest('POST', uri)
+        ..files.add(await http.MultipartFile.fromPath(
+          'file',
+          audioFile.path,
+          contentType: MediaType('audio', 'wav'),
+        ));
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final audioUrl = data['audio_url'];
-
-        if (audioUrl != null) {
-          setState(() => responseStatus = 'Playing response...');
-          await playAudio(audioUrl);
-        } else {
-          setState(() => responseStatus = 'No audio URL received');
-        }
+        setState(() {
+          serverResponse = data['text'] ?? 'No response text';
+          statusMessage = 'Success';
+        });
       } else {
-        setState(() => responseStatus = 'Error: ${response.statusCode}');
+        setState(() => statusMessage = 'Server error: ${response.statusCode}');
       }
     } catch (e) {
-      setState(() => responseStatus = 'Error: $e');
-    }
-  }
-
-  Future<void> playAudio(String url) async {
-    try {
-      await _player.play(UrlSource(url));
-    } catch (e) {
-      setState(() => responseStatus = 'Audio playback error: $e');
+      setState(() => statusMessage = 'Upload error: $e');
     }
   }
 
   @override
   void dispose() {
-    _speech.stop();
-    _player.dispose();
-    _animationController.dispose();
+    _recorder.closeRecorder();
     super.dispose();
   }
 
-  Widget buildWaveform() {
-    return AnimatedBuilder(
-      animation: _animationController,
-      builder: (_, __) {
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(5, (index) {
-            return Container(
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              width: 6,
-              height: 20.0 + (_animationController.value * 20 * (index % 2 == 0 ? 1 : 0.5)),
-              decoration: BoxDecoration(
-                color: Colors.blueAccent,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            );
-          }),
-        );
-      },
-    );
-  }
-
+  @override
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Voice Agent'),
-        backgroundColor: Colors.green,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (isListening) ...[
-                buildWaveform(),
-                const SizedBox(height: 20),
-              ],
-              Card(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 4,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF00B4DB), Color(0xFF0083B0)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (isRecording)
+                  const SpinKitWave(
+                    color: Colors.white,
+                    size: 40.0,
+                  ),
+                const SizedBox(height: 30),
+
+                // Glassmorphism card
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white.withOpacity(0.2)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
                   child: Column(
                     children: [
                       const Text(
-                        "You said:",
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        "Response:",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 12),
                       Text(
-                        recognizedText,
+                        serverResponse.isNotEmpty ? serverResponse : '---',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 16),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w400,
+                        ),
                       ),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 30),
-              ElevatedButton.icon(
-                icon: Icon(
-                  color: Colors.white,
-                    isListening ? Icons.stop_circle_outlined : Icons.mic),
-                label: Text(isListening ? "Stop Listening" : "Start Speaking",style: TextStyle(color:Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                  backgroundColor: isListening ? Colors.redAccent : Colors.blueAccent,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                  textStyle: const TextStyle(fontSize: 16),
-                ),
-                onPressed: () {
-                  setState(() => isListening = !isListening);
-                  isListening ? startListening() : stopListening();
-                },
-              ),
-              const SizedBox(height: 30),
-              if (responseStatus.contains("Processing") || responseStatus.contains("Playing"))
-                const SpinKitThreeBounce(
-                  color: Colors.blueAccent,
-                  size: 24.0,
-                ),
-              if (responseStatus.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 12.0),
-                  child: Text(
-                    responseStatus,
-                    style: const TextStyle(color: Colors.grey),
+
+                const SizedBox(height: 40),
+
+                // Glowing mic button
+                GestureDetector(
+                  onTap: isRecording ? _stopRecording : _startRecording,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isRecording ? Colors.redAccent : Colors.white,
+                      boxShadow: isRecording
+                          ? [
+                        BoxShadow(
+                          color: Colors.redAccent.withOpacity(0.6),
+                          blurRadius: 20,
+                          spreadRadius: 5,
+                        ),
+                      ]
+                          : [
+                        BoxShadow(
+                          color: Colors.white.withOpacity(0.4),
+                          blurRadius: 10,
+                          spreadRadius: 3,
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      isRecording ? Icons.stop : Icons.mic,
+                      size: 40,
+                      color: isRecording ? Colors.white : Colors.blueAccent,
+                    ),
                   ),
                 ),
-            ],
+
+                const SizedBox(height: 30),
+
+                // Status message
+                if (statusMessage.isNotEmpty)
+                  Text(
+                    statusMessage,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+
 }

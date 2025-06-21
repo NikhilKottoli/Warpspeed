@@ -43,6 +43,7 @@ dependencies:
   flutter_animation_progress_bar: ^2.3.1
   flutter_spinkit: ^5.2.1
   flutter_sound: ^9.28.0
+  record: ^6.0.0
 
 dev_dependencies:
   flutter_test:

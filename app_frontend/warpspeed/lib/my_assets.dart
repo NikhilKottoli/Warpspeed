@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+class MyAssetsPage extends StatefulWidget {
+  @override
+  State<MyAssetsPage> createState() => _MyAssetsPageState();
+}
 
-class MyAssetsPage extends StatelessWidget {
-  final List<Map<String, dynamic>> myAssets = [
+class _MyAssetsPageState extends State<MyAssetsPage> {
+   List<Map<String, dynamic>> myAssets = [
     {
       "name": "Seeder Machine",
       "description": "Precision seeder for crop planting.",
@@ -17,6 +23,31 @@ class MyAssetsPage extends StatelessWidget {
       "status": "Available",
     },
   ];
+   @override
+   void initState() {
+     super.initState();
+     fetchAssets();
+   }
+   Future<void> fetchAssets() async {
+     try {
+       final response = await http.get(Uri.parse('http://yourapi.com/assets/user/:address'));
+       if (response.statusCode == 200) {
+         final List<dynamic> data = json.decode(response.body);
+         setState(() {
+           myAssets = data.map<Map<String, dynamic>>((item) => {
+             "name": item['name'],
+             "description": item['description'],
+             "earnings": item['earnings'].toDouble(),
+             "image": item['image'], // You may need to resolve the image path
+           }).toList();
+         });
+       } else {
+         print('Failed to load assets');
+       }
+     } catch (e) {
+       print('Error fetching assets: $e');
+     }
+   }
 
   @override
   Widget build(BuildContext context) {

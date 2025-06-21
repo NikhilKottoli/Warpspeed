@@ -7,7 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:http_parser/http_parser.dart';
-
+import 'voice_screen.dart';
 class VoiceAgentPage extends StatefulWidget {
   const VoiceAgentPage({super.key});
 
@@ -53,7 +53,20 @@ class _VoiceAgentPageState extends State<VoiceAgentPage> {
       serverResponse = '';
     });
   }
-
+  final List<Map<String, String>> newsList = [
+    {
+      'title': 'बारिश की चेतावनी: अगले 24 घंटे में भारी बारिश की संभावना',
+      'summary': 'मौसम विभाग ने किसानों को अगले दो दिनों के लिए सावधानी बरतने की सलाह दी है।',
+    },
+    {
+      'title': 'गेहूं का न्यूनतम समर्थन मूल्य बढ़ा',
+      'summary': 'सरकार ने इस सीजन गेहूं का MSP ₹100 प्रति क्विंटल बढ़ा दिया है।',
+    },
+    {
+      'title': 'नई किसान बीमा योजना शुरू',
+      'summary': 'सरकार ने प्राकृतिक आपदाओं से सुरक्षा के लिए नई बीमा योजना लागू की है।',
+    },
+  ];
   Future<void> _stopRecording() async {
     final path = await _recorder.stopRecorder();
 
@@ -110,7 +123,7 @@ class _VoiceAgentPageState extends State<VoiceAgentPage> {
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('Voice Agent'),
+        title: const Text('किसान सहायक'),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
@@ -123,79 +136,115 @@ class _VoiceAgentPageState extends State<VoiceAgentPage> {
             end: Alignment.bottomRight,
           ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Center(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (isRecording)
-                  const SpinKitWave(
-                    color: Colors.white,
-                    size: 40.0,
-                  ),
+                // Profile Section
+                Row(
+                  children: [
+                    const CircleAvatar(
+                      radius: 28,
+                      backgroundImage: AssetImage('assets/profile.jpg'), // Replace with your asset
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'नमस्ते, किसान भाई!',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          'स्वागत है आपके सहायक में',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 30),
 
-                // Glassmorphism card
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withOpacity(0.2)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      const Text(
-                        "Response:",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        serverResponse.isNotEmpty ? serverResponse : '---',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ],
+                const Text(
+                  '🌾 कृषि समाचार',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
+                const SizedBox(height: 16),
 
-                const SizedBox(height: 40),
-
-                // Glowing mic button
+                // News Cards
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: newsList.length,
+                    itemBuilder: (context, index) {
+                      final news = newsList[index];
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 20),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.white.withOpacity(0.2)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              news['title']!,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              news['summary']!,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
                 GestureDetector(
-                  onTap: isRecording ? _stopRecording : _startRecording,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const VoiceAgentScreen()),
+                    );
+                  },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: isRecording ? Colors.redAccent : Colors.white,
-                      boxShadow: isRecording
-                          ? [
-                        BoxShadow(
-                          color: Colors.redAccent.withOpacity(0.6),
-                          blurRadius: 20,
-                          spreadRadius: 5,
-                        ),
-                      ]
-                          : [
+                      color: Colors.white,
+                      boxShadow: [
                         BoxShadow(
                           color: Colors.white.withOpacity(0.4),
                           blurRadius: 10,
@@ -203,26 +252,15 @@ class _VoiceAgentPageState extends State<VoiceAgentPage> {
                         ),
                       ],
                     ),
-                    child: Icon(
-                      isRecording ? Icons.stop : Icons.mic,
+                    child: const Icon(
+                      Icons.mic,
                       size: 40,
-                      color: isRecording ? Colors.white : Colors.blueAccent,
+                      color: Colors.blueAccent,
                     ),
                   ),
                 ),
 
-                const SizedBox(height: 30),
 
-                // Status message
-                if (statusMessage.isNotEmpty)
-                  Text(
-                    statusMessage,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
               ],
             ),
           ),

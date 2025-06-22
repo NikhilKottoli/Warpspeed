@@ -8,9 +8,15 @@ const speechController = {
       if (!text) {
         return res.status(400).json({ success: false, error: 'Text is required' });
       }
-
+      const assetsResponse = await axios.get('http://localhost:3000/assets/assets');
+      const assetsList = assetsResponse.data;
+      
+      const messageContent = `Here's a list of assets: ${JSON.stringify(assetsList, null, 2)}`;
+      
       const aiResponse = await axios.post('https://api.sarvam.ai/v1/chat/completions', {
-        messages: [{ role: "user", content: text }],
+        messages: [{ role: "system", content: messageContent },
+          { role: "user", content: text }
+        ],
         model: "sarvam-m"
       }, {
         headers: {

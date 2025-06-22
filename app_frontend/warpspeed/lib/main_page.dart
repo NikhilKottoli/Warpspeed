@@ -327,11 +327,7 @@ class _VoiceAgentPageState extends State<VoiceAgentPage> {
                 // Greeting Section
                 Row(
                   children: [
-                    const CircleAvatar(
-                      radius: 28,
-                      backgroundImage: AssetImage('assets/profile.jpg'),
-                    ),
-                    const SizedBox(width: 12),
+
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: const [

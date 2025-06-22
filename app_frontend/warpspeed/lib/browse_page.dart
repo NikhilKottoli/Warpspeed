@@ -101,15 +101,7 @@ class _BrowseAssetsPageState extends State<BrowseAssetsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                asset["image"],
-                height: 180,
-                width: double.infinity,
-                fit: BoxFit.cover,
-              ),
-            ),
+
             const SizedBox(height: 12),
             Text(
               asset["name"],

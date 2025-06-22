@@ -164,8 +164,10 @@ class _VoiceAgentScreenState extends State<VoiceAgentScreen> {
         );
         print(response2.body);
         final data2 = jsonDecode(response2.body);
-        final base64Audio = data2['audios'][0]; // Your string
-        await playBase64Audio(base64Audio);
+        final audioList = data2['audios'] as List;
+        for (String base64Audio in audioList) {
+          await playBase64Audio(base64Audio);
+        }
 
 
 

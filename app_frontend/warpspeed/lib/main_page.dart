@@ -8,6 +8,17 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:http_parser/http_parser.dart';
 import 'voice_screen.dart';
+import 'package:dart_rss/dart_rss.dart';
+import 'dart:io';
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:record/record.dart';
+import 'package:flutter_sound/flutter_sound.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:http_parser/http_parser.dart';
 class VoiceAgentPage extends StatefulWidget {
   const VoiceAgentPage({super.key});
 
@@ -21,11 +32,37 @@ class _VoiceAgentPageState extends State<VoiceAgentPage> {
   bool isRecording = false;
   String statusMessage = '';
   String serverResponse = '';
+  List<Map<String, String>> newsList = [];
+  bool isLoadingNews = true;
+  final FlutterSoundPlayer _player = FlutterSoundPlayer();
+  String? recordedFilePath;
+  String selectedLanguageCode = 'en-IN';
+
+
+  List<Map<String, String>> supportedLanguages = [
+    {'label': 'English', 'code': 'en-IN'},
+    {'label': 'Hindi', 'code': 'hi-IN'},
+    {'label': 'Bengali', 'code': 'bn-IN'},
+    {'label': 'Telugu', 'code': 'te-IN'},
+    {'label': 'Marathi', 'code': 'mr-IN'},
+    {'label': 'Tamil', 'code': 'ta-IN'},
+    {'label': 'Urdu', 'code': 'ur-IN'},
+    {'label': 'Gujarati', 'code': 'gu-IN'},
+    {'label': 'Kannada', 'code': 'kn-IN'},
+    {'label': 'Odia', 'code': 'or-IN'},
+    {'label': 'Malayalam', 'code': 'ml-IN'},
+    {'label': 'Punjabi', 'code': 'pa-IN'},
+    {'label': 'Assamese', 'code': 'as-IN'},
+    {'label': 'Maithili', 'code': 'mai-IN'},
+    {'label': 'Santali', 'code': 'sat-IN'},
+    {'label': 'Konkani', 'code': 'kok-IN'},
+  ];
 
   @override
   void initState() {
     super.initState();
     _initializeRecorder();
+    fetchAgriNews();
   }
 
   Future<void> _initializeRecorder() async {
@@ -33,10 +70,79 @@ class _VoiceAgentPageState extends State<VoiceAgentPage> {
     await Permission.storage.request();
     await _recorder.openRecorder();
   }
+  Future<void> playBase64Audio(String base64String) async {
+    try {
+      // 1. Decode base64 to bytes
+      final audioBytes = base64Decode(base64String);
+
+      // 2. Get temp directory and create .wav file
+      final tempDir = await getTemporaryDirectory();
+      final filePath = '${tempDir.path}/tts_output.wav';
+      final audioFile = File(filePath);
+      await audioFile.writeAsBytes(audioBytes);
+
+      // 3. Initialize and start player
+      await _player.openPlayer();
+      await _player.startPlayer(fromURI: filePath, codec: Codec.pcm16WAV);
+
+      print("✅ Playing audio...");
+    } catch (e) {
+      print("❌ Failed to play audio: $e");
+    }
+  }
 
   Future<String> _getTempWavPath() async {
     final directory = await getTemporaryDirectory();
     return '${directory.path}/recorded_audio.wav';
+  }
+
+  Future<void> fetchAgriNews() async {
+    try {
+      final response = await http.get(Uri.parse(
+          'https://www.thehindu.com/sci-tech/agriculture/feeder/default.rss'));
+
+      if (response.statusCode == 200) {
+        final feed = RssFeed.parse(response.body);
+
+
+        final items = feed.items;
+
+        List<String> textsToTranslate = [];
+        List<Map<String, String>> limitedNewsItems = [];
+        int charCount = 0;
+        for (var item in items) {
+          final title = item.title ?? '';
+          final summary = item.description ?? '';
+          final combined = "$title\n\n$summary";
+
+          textsToTranslate.add(item.title ?? '');
+          textsToTranslate.add(item.description ?? '');
+          limitedNewsItems.add({'title': title, 'summary': summary});
+          charCount += combined.length;
+        }
+        final translatedTexts = textsToTranslate;
+        List<Map<String, String>> translatedNews = [];
+        for (int i = 0; i < translatedTexts.length; i += 2) {
+          translatedNews.add({
+            'title': translatedTexts[i],
+            'summary': translatedTexts[i + 1],
+          });
+        }
+        print(translatedNews);
+        setState(() {
+          newsList = translatedNews;
+          isLoadingNews = false;
+        });
+      } else {
+        setState(() {
+          isLoadingNews = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        isLoadingNews = false;
+      });
+    }
   }
 
   Future<void> _startRecording() async {
@@ -53,20 +159,7 @@ class _VoiceAgentPageState extends State<VoiceAgentPage> {
       serverResponse = '';
     });
   }
-  final List<Map<String, String>> newsList = [
-    {
-      'title': 'बारिश की चेतावनी: अगले 24 घंटे में भारी बारिश की संभावना',
-      'summary': 'मौसम विभाग ने किसानों को अगले दो दिनों के लिए सावधानी बरतने की सलाह दी है।',
-    },
-    {
-      'title': 'गेहूं का न्यूनतम समर्थन मूल्य बढ़ा',
-      'summary': 'सरकार ने इस सीजन गेहूं का MSP ₹100 प्रति क्विंटल बढ़ा दिया है।',
-    },
-    {
-      'title': 'नई किसान बीमा योजना शुरू',
-      'summary': 'सरकार ने प्राकृतिक आपदाओं से सुरक्षा के लिए नई बीमा योजना लागू की है।',
-    },
-  ];
+
   Future<void> _stopRecording() async {
     final path = await _recorder.stopRecorder();
 
@@ -81,6 +174,33 @@ class _VoiceAgentPageState extends State<VoiceAgentPage> {
       setState(() => statusMessage = 'Recording failed');
     }
   }
+  Future<String> translateText(String input, String targetLangCode) async {
+    final uri = Uri.parse('https://api.sarvam.ai/translate');
+
+    final response = await http.post(
+      uri,
+      headers: {
+        'api-subscription-key': 'sk_vyja2u8y_8V8D4I7wA0f0iok2awYT9pqV',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'input': input,
+        'source_language_code': 'auto',
+        'target_language_code': targetLangCode,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['translated_text'] as String ;
+    } else {
+      print("Translation error: ${response.body}");
+      return input; // fallback to original text
+    }
+  }
+
+
+
 
   Future<void> _uploadAudio(File audioFile) async {
     try {
@@ -149,11 +269,47 @@ class _VoiceAgentPageState extends State<VoiceAgentPage> {
                 color: Colors.white,
               ),
             ),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1), // matches card transparency
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white.withOpacity(0.3)),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: selectedLanguageCode,
+                      icon: const Icon(Icons.language, color: Colors.white),
+                      dropdownColor: const Color(0xFF0083B0), // blue dropdown
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      onChanged: (String? newCode) async {
+                        if (newCode != null) {
+                          print(newCode);
+                          setState(() {
+                            selectedLanguageCode = newCode;
+                            isLoadingNews = true;
+                          });
+
+                        }
+                      },
+                      items: supportedLanguages.map((lang) {
+                        return DropdownMenuItem<String>(
+                          value: lang['code'],
+                          child: Text(lang['label'] ?? ''),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                )
+              )
+          ],
             centerTitle: true,
           ),
         ),
       ),
-
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -223,8 +379,8 @@ class _VoiceAgentPageState extends State<VoiceAgentPage> {
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                              color: Colors.white.withOpacity(0.2)),
+                          border:
+                              Border.all(color: Colors.white.withOpacity(0.2)),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.1),
@@ -233,23 +389,65 @@ class _VoiceAgentPageState extends State<VoiceAgentPage> {
                             ),
                           ],
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Stack(
                           children: [
-                            Text(
-                              news['title'] ?? '',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
+                            // Card content
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal:20),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    news['title'] ?? '',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    news['summary'] ?? '',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              news['summary'] ?? '',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.white70,
+
+                            // Top-right sound button
+                            Positioned(
+                              top: 0,
+                              right: 0,
+                              child: IconButton(
+                                icon: const Icon(Icons.volume_up,
+                                    color: Colors.white),
+                                onPressed: () async {
+                                  final fullText =
+                                      '${news['title']}. ${news['summary']}';
+                                  final translated = await translateText(fullText, selectedLanguageCode);
+
+
+
+                                  final uri = Uri.parse('https://api.sarvam.ai/text-to-speech');
+                                  final response2 = await http.post(
+                                    uri,
+                                    headers: {
+                                      'api-subscription-key': 'sk_vyja2u8y_8V8D4I7wA0f0iok2awYT9pqV', // Replace with actual key
+                                      'Content-Type': 'application/json',
+                                    },
+                                    body: jsonEncode({
+                                      'text': translated,
+                                      'target_language_code': selectedLanguageCode,
+                                    }),
+                                  );
+                                  print(response2.body);
+                                  final data2 = jsonDecode(response2.body);
+                                  final base64Audio = data2['audios'][0]; // Your string
+                                  await playBase64Audio(base64Audio);
+                                },
                               ),
                             ),
                           ],
@@ -260,7 +458,6 @@ class _VoiceAgentPageState extends State<VoiceAgentPage> {
                 ),
 
                 // Voice Agent Button
-
               ],
             ),
           ),
@@ -268,5 +465,4 @@ class _VoiceAgentPageState extends State<VoiceAgentPage> {
       ),
     );
   }
-
-  }
+}

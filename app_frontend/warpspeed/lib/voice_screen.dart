@@ -134,7 +134,7 @@ class _VoiceAgentScreenState extends State<VoiceAgentScreen> {
           statusMessage = 'Success';
         });
         final text = data['transcript'];
-        uri = Uri.parse('http://10.156.104.229:3000/audio/process-speech');
+        uri = Uri.parse('http://192.168.193.131:3000/audio/process-speech');
         final response1 = await http.post(
           uri,
           headers: {
@@ -189,12 +189,7 @@ class _VoiceAgentScreenState extends State<VoiceAgentScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: const Text('Voice Agent'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-      ),
+
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -206,97 +201,99 @@ class _VoiceAgentScreenState extends State<VoiceAgentScreen> {
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (isRecording)
-                  const SpinKitWave(
-                    color: Colors.white,
-                    size: 40.0,
-                  ),
-                const SizedBox(height: 30),
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withOpacity(0.2)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      const Text(
-                        "Response:",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        serverResponse.isNotEmpty ? serverResponse : '---',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 40),
-
-                GestureDetector(
-                  onTap: isRecording ? _stopRecording : _startRecording,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    width: 80,
-                    height: 80,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (isRecording)
+                    const SpinKitWave(
+                      color: Colors.white,
+                      size: 40.0,
+                    ),
+                  const SizedBox(height: 30),
+                  Container(
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isRecording ? Colors.redAccent : Colors.white,
-                      boxShadow: isRecording
-                          ? [
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white.withOpacity(0.2)),
+                      boxShadow: [
                         BoxShadow(
-                          color: Colors.redAccent.withOpacity(0.6),
-                          blurRadius: 20,
-                          spreadRadius: 5,
-                        ),
-                      ]
-                          : [
-                        BoxShadow(
-                          color: Colors.white.withOpacity(0.4),
+                          color: Colors.black.withOpacity(0.1),
                           blurRadius: 10,
-                          spreadRadius: 3,
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
-                    child: Icon(
-                      isRecording ? Icons.stop : Icons.mic,
-                      size: 40,
-                      color: isRecording ? Colors.white : Colors.blueAccent,
+                    child: Column(
+                      children: [
+                        const Text(
+                          "Response:",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          serverResponse.isNotEmpty ? serverResponse : '---',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.white70,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 30),
-                if (statusMessage.isNotEmpty)
-                  Text(
-                    statusMessage,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                      fontStyle: FontStyle.italic,
+                  const SizedBox(height: 40),
+              
+                  GestureDetector(
+                    onTap: isRecording ? _stopRecording : _startRecording,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isRecording ? Colors.redAccent : Colors.white,
+                        boxShadow: isRecording
+                            ? [
+                          BoxShadow(
+                            color: Colors.redAccent.withOpacity(0.6),
+                            blurRadius: 20,
+                            spreadRadius: 5,
+                          ),
+                        ]
+                            : [
+                          BoxShadow(
+                            color: Colors.white.withOpacity(0.4),
+                            blurRadius: 10,
+                            spreadRadius: 3,
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        isRecording ? Icons.stop : Icons.mic,
+                        size: 40,
+                        color: isRecording ? Colors.white : Colors.blueAccent,
+                      ),
                     ),
                   ),
-              ],
+                  const SizedBox(height: 30),
+                  if (statusMessage.isNotEmpty)
+                    Text(
+                      statusMessage,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ),

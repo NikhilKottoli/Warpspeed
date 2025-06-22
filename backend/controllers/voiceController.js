@@ -11,7 +11,7 @@ const speechController = {
       const assetsResponse = await axios.get('http://localhost:3000/assets/assets');
       const assetsList = assetsResponse.data;
       
-      const messageContent = `Here's a list of assets: ${JSON.stringify(assetsList, null, 2)}`;
+      const messageContent = `You are an helpful agent to indian farmers, farmers own assets and talk about it only when the farmer asks about it.Give suggestions on the best item to borrow to farmers from the list ,Heres a list of assets: ${JSON.stringify(assetsList, null, 2)}`;
       
       const aiResponse = await axios.post('https://api.sarvam.ai/v1/chat/completions', {
         messages: [{ role: "system", content: messageContent },

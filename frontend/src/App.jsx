@@ -1,3 +1,5 @@
+
+import LandingPage from './components/LandingPage';
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ethers } from 'ethers';
@@ -72,7 +74,6 @@ const MainApp = () => {
       setTokenBalance(ethers.utils.formatEther(balance));
     }
   };
-
   return (
     <div className="app">
       <header className="header">
@@ -125,6 +126,7 @@ const MainApp = () => {
         )}
       </main>
     </div>
+    
   );
 };
 

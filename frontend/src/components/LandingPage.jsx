@@ -1,71 +1,62 @@
 import React, { useState, useEffect } from 'react';
-import { Cloud, DollarSign, Building2, TrendingUp, Leaf, Smartphone, Wifi, Users, Database, Shield } from 'lucide-react';
+import { Cloud, DollarSign, Building2 } from 'lucide-react';
+
+// NOTE: For a real shadcn project, you would typically use components like
+// <Button>, <Card>, etc., but since we are modifying a single file,
+// we will primarily apply the shadcn *color and style* philosophy using Tailwind classes.
 
 const LandingPage = () => {
   const [scrollY, setScrollY] = useState(0);
   const [isVisible, setIsVisible] = useState({});
   const [featuresData, setFeaturesData] = useState({ features: [] });
 
-  // Icon mapping for string to component conversion
+  // Icon mapping (Simplified, keeping only the used ones for brevity)
   const iconMap = {
     Cloud,
     DollarSign,
     Building2,
-    TrendingUp,
-    Leaf,
-    Smartphone,
-    Wifi,
-    Users,
-    Database,
-    Shield
   };
 
-  // Load features from JSON file
+  // Load features from simulated JSON
   useEffect(() => {
-    const loadFeatures = async () => {
-      try {
-        // In a real project, you would fetch from './features.json'
-        // For this demo, we'll simulate loading the JSON data
-        const response = {
-          "features": [
-            {
-              "id": "weather-forecast",
-              "icon": "Cloud",
-              "title": "Weather Forecast",
-              "description": "Get accurate 7-day weather predictions, rainfall alerts, and climate insights to plan your farming activities better.",
-              "enabled": true
-            },
-            {
-              "id": "msp-prices",
-              "icon": "DollarSign",
-              "title": "MSP Prices",
-              "description": "Stay updated with the latest Minimum Support Prices for all crops and make informed selling decisions.",
-              "enabled": true
-            },
-            {
-              "id": "government-schemes",
-              "icon": "Building2",
-              "title": "Government Schemes",
-              "description": "Access comprehensive information about agricultural subsidies, loans, and government welfare programs.",
-              "enabled": true
-            }
-          ]
-        };
-        setFeaturesData(response);
-      } catch (error) {
-        console.error('Error loading features:', error);
-      }
+    const loadFeatures = () => {
+      const response = {
+        "features": [
+          {
+            "id": "weather-forecast",
+            "icon": "Cloud",
+            "title": "Real-time Weather",
+            "description": "Accurate 7-day predictions, hyper-local rainfall alerts, and climate insights for proactive farming.",
+            "enabled": true
+          },
+          {
+            "id": "msp-prices",
+            "icon": "DollarSign",
+            "title": "Market Price Insights",
+            "description": "Stay updated with the latest Minimum Support Prices (MSP) and local mandi rates for informed selling decisions.",
+            "enabled": true
+          },
+          {
+            "id": "government-schemes",
+            "icon": "Building2",
+            "title": "Subsidy Access",
+            "description": "Comprehensive, searchable database of agricultural subsidies, loans, and government welfare programs.",
+            "enabled": true
+          }
+        ]
+      };
+      setFeaturesData(response);
     };
 
     loadFeatures();
   }, []);
 
-  // Filter enabled features and convert to component-ready format
+  // Filter enabled features and convert icon string to component
   const features = featuresData.features
     .filter(feature => feature.enabled)
     .map(feature => ({
       ...feature,
-      icon: iconMap[feature.icon] || Cloud // fallback to Cloud if icon not found
+      icon: iconMap[feature.icon] || Cloud
     }));
 
   // Handle scroll for parallax and navbar effects
@@ -88,7 +79,8 @@ const LandingPage = () => {
           }
         });
       },
-      { threshold: 0.1 }
+      // Lower threshold for early animation trigger
+      { threshold: 0.05 }
     );
 
     const elements = document.querySelectorAll('[data-animate]');
@@ -97,15 +89,15 @@ const LandingPage = () => {
     return () => observer.disconnect();
   }, []);
 
-  // Floating particles component
+  // Floating particles component (Simplified and color-adjusted for subtle effect)
   const FloatingParticles = () => {
-    const particles = Array.from({ length: 30 }, (_, i) => (
+    const particles = Array.from({ length: 20 }, (_, i) => (
       <div
         key={i}
-        className="absolute bg-green-400/10 rounded-full animate-pulse"
+        className="absolute bg-primary/20 rounded-full animate-pulse"
         style={{
-          width: Math.random() * 6 + 2 + 'px',
-          height: Math.random() * 6 + 2 + 'px',
+          width: Math.random() * 4 + 2 + 'px',
+          height: Math.random() * 4 + 2 + 'px',
           left: Math.random() * 100 + '%',
           top: Math.random() * 100 + '%',
           animationDelay: Math.random() * 3 + 's',
@@ -121,27 +113,27 @@ const LandingPage = () => {
   };
 
   return (
-    <div className="bg-white text-gray-800 overflow-x-hidden">
+    <div className="bg-background text-foreground overflow-x-hidden font-sans">
       <FloatingParticles />
       
       {/* Navigation */}
       <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-        scrollY > 50 ? 'bg-white/95 backdrop-blur-lg shadow-lg' : 'bg-white/90 backdrop-blur-sm'
+        scrollY > 50 ? 'bg-background/90 backdrop-blur-lg shadow-sm border-b border-border' : 'bg-transparent'
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-xl font-bold text-primary">
               🌾 KRISHISATHI
             </div>
-            <div className="hidden md:flex space-x-8">
-              {['Home', 'Features', 'About', 'Contact'].map((item) => (
+            <div className="hidden md:flex space-x-6">
+              {['Home', 'Features', 'Team', 'Contact'].map((item) => (
                 <a
                   key={item}
                   href={`#${item.toLowerCase()}`}
-                  className="relative group text-gray-700 hover:text-green-600 transition-colors duration-300"
+                  className="relative group text-foreground/80 hover:text-primary transition-colors duration-300 text-sm font-medium"
                 >
                   {item}
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-600 group-hover:w-full transition-all duration-300"></span>
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary group-hover:w-full transition-all duration-300"></span>
                 </a>
               ))}
             </div>
@@ -152,33 +144,33 @@ const LandingPage = () => {
       {/* Hero Section */}
       <section 
         id="home"
-        className="min-h-screen flex items-center justify-center relative bg-gradient-to-br from-green-50 to-emerald-50"
-        style={{ transform: `translateY(${scrollY * 0.3}px)` }}
+        className="min-h-screen flex items-center justify-center relative bg-background pt-24"
+        // Reduced parallax effect for a more subtle, modern feel
+        style={{ transform: `translateY(${scrollY * 0.1}px)` }}
       >
         <div className="text-center z-10 px-4 max-w-4xl mx-auto">
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 bg-clip-text text-transparent">
+          <h1 className="text-6xl md:text-8xl font-extrabold mb-6 tracking-tight text-foreground">
             KRISHISATHI
           </h1>
-          <p className="text-xl md:text-2xl mb-4 text-gray-600">
-            Your Digital Companion for Smart Farming
+          <p className="text-xl md:text-2xl mb-4 text-muted-foreground">
+            Your Digital Companion for **Smart Farming**
           </p>
-          <p className="text-lg mb-8 text-gray-500">
-            Real-time Weather • MSP Prices • Government Schemes • Agricultural Insights
+          <p className="text-lg mb-8 text-foreground/70 max-w-2xl mx-auto">
+            Leveraging AI and Data to optimize crop cycles, maximize yields, and ensure market readiness for every farmer.
           </p>
           <button 
             onClick={handleExploreClick}
-            className="group relative px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full text-lg font-semibold text-white transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-green-500/25"
+            // Uses shadcn primary button styling
+            className="group relative px-8 py-3 bg-primary text-primary-foreground rounded-lg text-base font-semibold transition-all duration-300 hover:bg-primary/90 shadow-md hover:shadow-lg"
           >
-            <span className="relative z-10">Explore Features</span>
-            <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <div className="absolute inset-0 bg-white/20 rounded-full scale-0 group-hover:scale-100 transition-transform duration-500"></div>
+            <span className="relative z-10">Explore Solutions</span>
           </button>
         </div>
         
-        {/* Animated wave */}
+        {/* Simplified and cleaner wave */}
         <div className="absolute bottom-0 left-0 w-full">
-          <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-20">
-            <path d="M0,60 C300,120 900,0 1200,60 L1200,120 L0,120 Z" fill="#bbf7d0" />
+          <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-16">
+            <path d="M0,48 C240,64 480,48 720,48 C960,48 1200,64 1200,48 L1200,120 L0,120 Z" fill="hsl(var(--muted))" />
           </svg>
         </div>
       </section>
@@ -187,35 +179,37 @@ const LandingPage = () => {
       <section 
         id="features" 
         data-animate 
-        className="py-20 bg-gray-50 relative"
+        className="py-20 bg-muted relative"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl md:text-5xl font-bold text-center mb-16 bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent">
-            Empowering Farmers with Technology
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-16 text-foreground">
+            Empowering Farmers with Data
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
                 <div
                   key={feature.id}
-                  className={`group relative bg-white p-8 rounded-2xl border border-gray-200 shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-xl hover:shadow-green-500/10 transform ${
-                    isVisible.features ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
+                  id="features" // ID is moved here for observer
+                  className={`group bg-card p-6 rounded-xl border border-border shadow-sm transition-all duration-500 hover:shadow-lg transform ${
+                    isVisible.features ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
                   }`}
                   style={{ 
                     transitionDelay: `${index * 100}ms`,
                     transition: 'all 0.6s ease-out'
                   }}
                 >
-                  {/* Gradient border on hover */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
-                  <div className="absolute inset-0.5 bg-white rounded-2xl"></div>
-                  
-                  <div className="text-center relative z-10">
-                    <Icon className="w-12 h-12 mx-auto mb-4 text-green-500 group-hover:scale-110 transition-transform duration-300" />
-                    <h3 className="text-xl font-semibold mb-4 text-green-600">{feature.title}</h3>
-                    <p className="text-gray-600 leading-relaxed">{feature.description}</p>
+                  <div className="flex items-start">
+                    {/* Icon style uses primary color for focus */}
+                    <div className="p-3 mr-4 rounded-full bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors duration-300">
+                      <Icon className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold mb-2 text-card-foreground">{feature.title}</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+                    </div>
                   </div>
                 </div>
               );
@@ -228,11 +222,11 @@ const LandingPage = () => {
       <section 
         id="team" 
         data-animate 
-        className="py-20 bg-white relative"
+        className="py-20 bg-background relative"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl md:text-5xl font-bold text-center mb-16 bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent">
-            Meet Our Team
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-16 text-foreground">
+            Dedicated to the Vision
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-4xl mx-auto">
@@ -252,6 +246,7 @@ const LandingPage = () => {
             ].map((member, index) => (
               <div
                 key={member.name}
+                id="team" // ID is moved here for observer
                 className={`text-center transform ${
                   isVisible.team ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
                 }`}
@@ -263,12 +258,13 @@ const LandingPage = () => {
                 <img
                   src={member.image}
                   alt={member.name}
-                  className="w-32 h-32 mx-auto rounded-full border-4 border-green-200 hover:border-green-400 transition-all duration-300 hover:scale-105 shadow-lg"
+                  className="w-32 h-32 mx-auto rounded-full object-cover border-4 border-border hover:border-primary transition-all duration-300 hover:scale-[1.02] shadow-md"
                 />
                 
-                <h3 className="text-lg font-semibold mt-4 text-gray-800">
+                <h3 className="text-lg font-semibold mt-4 text-foreground">
                   {member.name}
                 </h3>
+                <p className="text-sm text-muted-foreground">Co-founder</p>
               </div>
             ))}
           </div>
@@ -276,10 +272,11 @@ const LandingPage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-800 py-8">
+      <footer className="bg-card border-t border-border py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <p className="text-white/80">&copy; 2025 KRISHISATHI. Empowering farmers through technology.</p>
+            <p className="text-muted-foreground text-sm">&copy; 2025 KRISHISATHI. Empowering farmers through technology.</p>
+            <p className="text-muted-foreground text-xs mt-1">Built with React and a modern UI philosophy.</p>
           </div>
         </div>
       </footer>
